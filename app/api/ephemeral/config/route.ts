@@ -10,6 +10,16 @@ import {
 } from "@/lib/ephemeral-cleanup";
 import { EPHEMERAL_CONFIG } from "@/lib/ephemeral-config";
 
+type EphemeralConfigResult = {
+  room?: Record<string, unknown> | null;
+  global?: Record<string, unknown>;
+  constants?: {
+    DEFAULT_TTL_SECONDS: number;
+    MIN_TTL_SECONDS: number;
+    MAX_TTL_SECONDS: number;
+  };
+};
+
 /**
  * GET /api/ephemeral/config - Get ephemeral message configuration
  * Query params:
@@ -50,7 +60,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const result: any = {};
+    const result: EphemeralConfigResult = {};
 
     // Get room-specific config
     if ((type === "both" || type === "room") && roomId) {
@@ -128,8 +138,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
-    const { room_id, ttl_seconds, enabled = true, is_global } = body;
+    const body: unknown = await request.json();
+    const { room_id, ttl_seconds, enabled = true, is_global } = (body ?? {}) as {
+      room_id?: string;
+      ttl_seconds?: number;
+      enabled?: boolean;
+      is_global?: boolean;
+    };
 
     // Validate TTL
     if (!ttl_seconds || ttl_seconds < EPHEMERAL_CONFIG.MIN_TTL_SECONDS ||
